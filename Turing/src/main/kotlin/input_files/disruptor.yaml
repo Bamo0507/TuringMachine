@@ -1,0 +1,98 @@
+---
+# MT alteradora por paridad de 'a'
+# Regla:
+# - Si #a es PAR  -> convertir todos los 'b' en 'c' (los 'c' permanecen 'c')
+# - Si #a es IMPAR-> convertir todos los 'c' en 'b' (los 'b' permanecen 'b')
+#
+# Uso de mem_cache_value:
+# - B : estado inicial del simulador (se trata como paridad E)
+# - E : par (even)
+# - O : impar (odd)
+#
+# Convenciones:
+# - Blank: 'B'
+# - No se usan marcas (solo reescritura directa)
+
+q_states:
+  q_list:
+    - '0' # scan derecha: calcular paridad (#a)
+    - 'rb2c' # rewrite izquierda si par: b->c
+    - 'rc2b' # rewrite izquierda si impar: c->b
+    - '1' # aceptación
+  initial: '0'
+  final: '1'
+
+alphabet:
+  - 'a'
+  - 'b'
+  - 'c'
+
+tape_alphabet:
+  - 'a'
+  - 'b'
+  - 'c'
+  - 'B'
+
+delta:
+  # Estado '0' (scan → derecha, calcular paridad)
+  # Compat: cache=B al inicio → trátalo como E
+  - params: { initial_state: '0', mem_cache_value: 'B', tape_input: 'a' }
+    output: { final_state: '0', mem_cache_value: 'O', tape_output: 'a', tape_displacement: 'R' }
+  - params: { initial_state: '0', mem_cache_value: 'B', tape_input: 'b' }
+    output: { final_state: '0', mem_cache_value: 'E', tape_output: 'b', tape_displacement: 'R' }
+  - params: { initial_state: '0', mem_cache_value: 'B', tape_input: 'c' }
+    output: { final_state: '0', mem_cache_value: 'E', tape_output: 'c', tape_displacement: 'R' }
+
+  # Paridad E (even)
+  - params: { initial_state: '0', mem_cache_value: 'E', tape_input: 'a' }
+    output: { final_state: '0', mem_cache_value: 'O', tape_output: 'a', tape_displacement: 'R' }
+  - params: { initial_state: '0', mem_cache_value: 'E', tape_input: 'b' }
+    output: { final_state: '0', mem_cache_value: 'E', tape_output: 'b', tape_displacement: 'R' }
+  - params: { initial_state: '0', mem_cache_value: 'E', tape_input: 'c' }
+    output: { final_state: '0', mem_cache_value: 'E', tape_output: 'c', tape_displacement: 'R' }
+
+  # Paridad O (odd)
+  - params: { initial_state: '0', mem_cache_value: 'O', tape_input: 'a' }
+    output: { final_state: '0', mem_cache_value: 'E', tape_output: 'a', tape_displacement: 'R' }
+  - params: { initial_state: '0', mem_cache_value: 'O', tape_input: 'b' }
+    output: { final_state: '0', mem_cache_value: 'O', tape_output: 'b', tape_displacement: 'R' }
+  - params: { initial_state: '0', mem_cache_value: 'O', tape_input: 'c' }
+    output: { final_state: '0', mem_cache_value: 'O', tape_output: 'c', tape_displacement: 'R' }
+
+  # Al llegar al blank derecho, decidir modo de reescritura y comenzar a ir a la izquierda
+  - params: { initial_state: '0', mem_cache_value: 'E', tape_input: 'B' }
+    output: { final_state: 'rb2c', mem_cache_value: 'E', tape_output: 'B', tape_displacement: 'L' }
+  - params: { initial_state: '0', mem_cache_value: 'B', tape_input: 'B' }
+    output: { final_state: 'rb2c', mem_cache_value: 'E', tape_output: 'B', tape_displacement: 'L' }
+  - params: { initial_state: '0', mem_cache_value: 'O', tape_input: 'B' }
+    output: { final_state: 'rc2b', mem_cache_value: 'O', tape_output: 'B', tape_displacement: 'L' }
+
+  # Estado 'rb2c' (par: reescribir b->c y moverse a la izquierda)
+  - params: { initial_state: 'rb2c', mem_cache_value: 'E', tape_input: 'a' }
+    output: { final_state: 'rb2c', mem_cache_value: 'E', tape_output: 'a', tape_displacement: 'L' }
+  - params: { initial_state: 'rb2c', mem_cache_value: 'E', tape_input: 'b' }
+    output: { final_state: 'rb2c', mem_cache_value: 'E', tape_output: 'c', tape_displacement: 'L' }
+  - params: { initial_state: 'rb2c', mem_cache_value: 'E', tape_input: 'c' }
+    output: { final_state: 'rb2c', mem_cache_value: 'E', tape_output: 'c', tape_displacement: 'L' }
+
+  # Al llegar al blank izquierdo, aceptar
+  - params: { initial_state: 'rb2c', mem_cache_value: 'E', tape_input: 'B' }
+    output: { final_state: '1', mem_cache_value: 'E', tape_output: 'B', tape_displacement: 'R' }
+
+  # Estado 'rc2b' (impar: reescribir c->b y moverse a la izquierda)
+  - params: { initial_state: 'rc2b', mem_cache_value: 'O', tape_input: 'a' }
+    output: { final_state: 'rc2b', mem_cache_value: 'O', tape_output: 'a', tape_displacement: 'L' }
+  - params: { initial_state: 'rc2b', mem_cache_value: 'O', tape_input: 'b' }
+    output: { final_state: 'rc2b', mem_cache_value: 'O', tape_output: 'b', tape_displacement: 'L' }
+  - params: { initial_state: 'rc2b', mem_cache_value: 'O', tape_input: 'c' }
+    output: { final_state: 'rc2b', mem_cache_value: 'O', tape_output: 'b', tape_displacement: 'L' }
+
+  # Al llegar al blank izquierdo, aceptar
+  - params: { initial_state: 'rc2b', mem_cache_value: 'O', tape_input: 'B' }
+    output: { final_state: '1', mem_cache_value: 'O', tape_output: 'B', tape_displacement: 'R' }
+
+simulation_strings:
+  - "aaabbbccc" # a=3 impar --> c->b => aaabbbbbbb
+  - "aabbcc" # a=2 par --> b->c => aacccc
+  - "abccb" # a=1 impar --> c->b => abbbb
+  - "bbbccc" # a=0 par --> b->c => cccccc

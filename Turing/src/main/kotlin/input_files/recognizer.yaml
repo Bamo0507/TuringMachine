@@ -1,0 +1,152 @@
+---
+# MT reconocedora de L = { a^n b^{2n} c^{3n} | n ≥ 1 }
+# Usa mem_cache_value como "deuda" a consumir:
+#   B   = sin deuda
+#   B2  = faltan 2 b
+#   B1  = falta 1 b
+#   C3  = faltan 3 c
+#   C2  = faltan 2 c
+#   C1  = falta 1 c
+#
+# Convenciones:
+# - Blank: 'B'
+# - Marcas: X (a usada), Y (b usada), Z (c usada)
+q_states:
+  q_list:
+    - '0' # buscar 'a' sin marcar; si no hay, verificar fin
+    - 'find_b' # consumir 2 'b' para la 'a' marcada (usa cache B2/B1)
+    - 'find_c' # consumir 3 'c' tras completar las 2 'b' (usa cache C3/C2/C1)
+    - 'return_left' # regresar al blank izquierdo y volver a '0'
+    - 'check_done' # verificar que solo queden marcas (X/Y/Z)
+    - '1' # estado de aceptación
+  initial: '0'
+  final: '1'
+
+alphabet:
+  - 'a'
+  - 'b'
+  - 'c'
+
+tape_alphabet:
+  - 'a'
+  - 'b'
+  - 'c'
+  - 'X' # 'a' marcada
+  - 'Y' # 'b' consumida
+  - 'Z' # 'c' consumida
+  - 'B' # blank
+
+delta:
+  # Estado 0: buscar 'a' sin marcar
+  # Encontró 'a' -> marcar 'X' y preparar deuda de 2 'b'
+  - params:   { initial_state: '0', mem_cache_value: 'B', tape_input: 'a' }
+    output:   { final_state: 'find_b', mem_cache_value: 'B2', tape_output: 'X', tape_displacement: 'R' }
+
+  # Saltar sobre trabajo marcado
+  - params:   { initial_state: '0', mem_cache_value: 'B', tape_input: 'X' }
+    output:   { final_state: '0', mem_cache_value: 'B', tape_output: 'X', tape_displacement: 'R' }
+  - params:   { initial_state: '0', mem_cache_value: 'B', tape_input: 'Y' }
+    output:   { final_state: '0', mem_cache_value: 'B', tape_output: 'Y', tape_displacement: 'R' }
+  - params:   { initial_state: '0', mem_cache_value: 'B', tape_input: 'Z' }
+    output:   { final_state: '0', mem_cache_value: 'B', tape_output: 'Z', tape_displacement: 'R' }
+
+  # Si llegamos al blank sin hallar nueva 'a' -> verificar que todo esté marcado
+  - params:   { initial_state: '0', mem_cache_value: 'B', tape_input: 'B' }
+    output:   { final_state: 'check_done', mem_cache_value: 'B', tape_output: 'B', tape_displacement: 'L' }
+
+  # Nota: leer 'b' o 'c' aquí (sin haber marcado nueva 'a') implica desorden -> rechazo por ausencia de transición
+
+  # Estado find_b: consumir exactamente 2 'b'
+  # Primera 'b' (B2 -> B1)
+  - params:   { initial_state: 'find_b', mem_cache_value: 'B2', tape_input: 'b' }
+    output:   { final_state: 'find_b', mem_cache_value: 'B1', tape_output: 'Y', tape_displacement: 'R' }
+
+  # Segunda 'b' (B1 -> C3) y pasar a buscar 'c'
+  - params:   { initial_state: 'find_b', mem_cache_value: 'B1', tape_input: 'b' }
+    output:   { final_state: 'find_c', mem_cache_value: 'C3', tape_output: 'Y', tape_displacement: 'R' }
+
+  # Saltos mientras buscamos 'b'
+  - params:   { initial_state: 'find_b', mem_cache_value: 'B2', tape_input: 'a' }
+    output:   { final_state: 'find_b', mem_cache_value: 'B2', tape_output: 'a', tape_displacement: 'R' }
+  - params:   { initial_state: 'find_b', mem_cache_value: 'B1', tape_input: 'a' }
+    output:   { final_state: 'find_b', mem_cache_value: 'B1', tape_output: 'a', tape_displacement: 'R' }
+
+  - params:   { initial_state: 'find_b', mem_cache_value: 'B2', tape_input: 'X' }
+    output:   { final_state: 'find_b', mem_cache_value: 'B2', tape_output: 'X', tape_displacement: 'R' }
+  - params:   { initial_state: 'find_b', mem_cache_value: 'B1', tape_input: 'X' }
+    output:   { final_state: 'find_b', mem_cache_value: 'B1', tape_output: 'X', tape_displacement: 'R' }
+
+  - params:   { initial_state: 'find_b', mem_cache_value: 'B2', tape_input: 'Y' }
+    output:   { final_state: 'find_b', mem_cache_value: 'B2', tape_output: 'Y', tape_displacement: 'R' }
+  - params:   { initial_state: 'find_b', mem_cache_value: 'B1', tape_input: 'Y' }
+    output:   { final_state: 'find_b', mem_cache_value: 'B1', tape_output: 'Y', tape_displacement: 'R' }
+
+  - params:   { initial_state: 'find_b', mem_cache_value: 'B2', tape_input: 'Z' }
+    output:   { final_state: 'find_b', mem_cache_value: 'B2', tape_output: 'Z', tape_displacement: 'R' }
+  - params:   { initial_state: 'find_b', mem_cache_value: 'B1', tape_input: 'Z' }
+    output:   { final_state: 'find_b', mem_cache_value: 'B1', tape_output: 'Z', tape_displacement: 'R' }
+
+  # Nota: si aparece 'c' en find_b con deuda de b (B2 o B1), es desorden -> rechazo (sin transición)
+
+  # Estado find_c: consumir exactamente 3 'c'
+  # Consumir c: C3 -> C2 -> C1 -> (B y regresar)
+  - params:   { initial_state: 'find_c', mem_cache_value: 'C3', tape_input: 'c' }
+    output:   { final_state: 'find_c', mem_cache_value: 'C2', tape_output: 'Z', tape_displacement: 'R' }
+  - params:   { initial_state: 'find_c', mem_cache_value: 'C2', tape_input: 'c' }
+    output:   { final_state: 'find_c', mem_cache_value: 'C1', tape_output: 'Z', tape_displacement: 'R' }
+  - params:   { initial_state: 'find_c', mem_cache_value: 'C1', tape_input: 'c' }
+    output:   { final_state: 'return_left', mem_cache_value: 'B', tape_output: 'Z', tape_displacement: 'L' }
+
+  # Saltos mientras buscamos 'c' (pueden quedar b sin usar para otras a)
+  - params:   { initial_state: 'find_c', mem_cache_value: 'C3', tape_input: 'b' }
+    output:   { final_state: 'find_c', mem_cache_value: 'C3', tape_output: 'b', tape_displacement: 'R' }
+  - params:   { initial_state: 'find_c', mem_cache_value: 'C2', tape_input: 'b' }
+    output:   { final_state: 'find_c', mem_cache_value: 'C2', tape_output: 'b', tape_displacement: 'R' }
+  - params:   { initial_state: 'find_c', mem_cache_value: 'C1', tape_input: 'b' }
+    output:   { final_state: 'find_c', mem_cache_value: 'C1', tape_output: 'b', tape_displacement: 'R' }
+
+  - params:   { initial_state: 'find_c', mem_cache_value: 'C3', tape_input: 'Y' }
+    output:   { final_state: 'find_c', mem_cache_value: 'C3', tape_output: 'Y', tape_displacement: 'R' }
+  - params:   { initial_state: 'find_c', mem_cache_value: 'C2', tape_input: 'Y' }
+    output:   { final_state: 'find_c', mem_cache_value: 'C2', tape_output: 'Y', tape_displacement: 'R' }
+  - params:   { initial_state: 'find_c', mem_cache_value: 'C1', tape_input: 'Y' }
+    output:   { final_state: 'find_c', mem_cache_value: 'C1', tape_output: 'Y', tape_displacement: 'R' }
+
+  - params:   { initial_state: 'find_c', mem_cache_value: 'C3', tape_input: 'Z' }
+    output:   { final_state: 'find_c', mem_cache_value: 'C3', tape_output: 'Z', tape_displacement: 'R' }
+  - params:   { initial_state: 'find_c', mem_cache_value: 'C2', tape_input: 'Z' }
+    output:   { final_state: 'find_c', mem_cache_value: 'C2', tape_output: 'Z', tape_displacement: 'R' }
+  - params:   { initial_state: 'find_c', mem_cache_value: 'C1', tape_input: 'Z' }
+    output:   { final_state: 'find_c', mem_cache_value: 'C1', tape_output: 'Z', tape_displacement: 'R' }
+
+  # Estado return_left: regresar al inicio
+  - params:   { initial_state: 'return_left', mem_cache_value: 'B', tape_input: 'a' }
+    output:   { final_state: 'return_left', mem_cache_value: 'B', tape_output: 'a', tape_displacement: 'L' }
+  - params:   { initial_state: 'return_left', mem_cache_value: 'B', tape_input: 'b' }
+    output:   { final_state: 'return_left', mem_cache_value: 'B', tape_output: 'b', tape_displacement: 'L' }
+  - params:   { initial_state: 'return_left', mem_cache_value: 'B', tape_input: 'c' }
+    output:   { final_state: 'return_left', mem_cache_value: 'B', tape_output: 'c', tape_displacement: 'L' }
+  - params:   { initial_state: 'return_left', mem_cache_value: 'B', tape_input: 'X' }
+    output:   { final_state: 'return_left', mem_cache_value: 'B', tape_output: 'X', tape_displacement: 'L' }
+  - params:   { initial_state: 'return_left', mem_cache_value: 'B', tape_input: 'Y' }
+    output:   { final_state: 'return_left', mem_cache_value: 'B', tape_output: 'Y', tape_displacement: 'L' }
+  - params:   { initial_state: 'return_left', mem_cache_value: 'B', tape_input: 'Z' }
+    output:   { final_state: 'return_left', mem_cache_value: 'B', tape_output: 'Z', tape_displacement: 'L' }
+  - params:   { initial_state: 'return_left', mem_cache_value: 'B', tape_input: 'B' }
+    output:   { final_state: '0', mem_cache_value: 'B', tape_output: 'B', tape_displacement: 'R' }
+
+  # Estado check_done: verificar solo marca
+  - params:   { initial_state: 'check_done', mem_cache_value: 'B', tape_input: 'X' }
+    output:   { final_state: 'check_done', mem_cache_value: 'B', tape_output: 'X', tape_displacement: 'L' }
+  - params:   { initial_state: 'check_done', mem_cache_value: 'B', tape_input: 'Y' }
+    output:   { final_state: 'check_done', mem_cache_value: 'B', tape_output: 'Y', tape_displacement: 'L' }
+  - params:   { initial_state: 'check_done', mem_cache_value: 'B', tape_input: 'Z' }
+    output:   { final_state: 'check_done', mem_cache_value: 'B', tape_output: 'Z', tape_displacement: 'L' }
+  - params:   { initial_state: 'check_done', mem_cache_value: 'B', tape_input: 'B' }
+    output:   { final_state: '1', mem_cache_value: 'B', tape_output: 'B', tape_displacement: 'R' }
+
+simulation_strings:
+  - "abbccc" # aceptada
+  - "aabbbbcccccc" # aceptada
+  - "abbbccc" # rechazada
+  - "abbcc" # rechazada
