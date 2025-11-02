@@ -4,6 +4,10 @@
 
 El objetivo de este proyecto es implementar una Máquina de Turing que pueda simular la ejecución de una Máquina de Turing dada en un archivo YAML. Por motivos de familiaridad y por la orientación del lenguaje a trabajar de forma orientada a objetos se decidió trabajar con Kotlin.
 
+## Video
+
+[![Vista previa del video](https://img.youtube.com/vi/OytBxoeViFM/maxresdefault.jpg)](https://youtu.be/OytBxoeViFM)
+
 ## Estructura del proyecto
 
 El proyecto se divide en dos partes:
