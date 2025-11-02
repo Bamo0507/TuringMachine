@@ -1,12 +1,12 @@
 ---
 # MT reconocedora de L = { a^n b^{2n} c^{3n} | n ≥ 1 }
 # Usa mem_cache_value como "deuda" a consumir:
-#   B   = sin deuda
-#   B2  = faltan 2 b
-#   B1  = falta 1 b
-#   C3  = faltan 3 c
-#   C2  = faltan 2 c
-#   C1  = falta 1 c
+# B   = sin deuda
+# B2  = faltan 2 b
+# B1  = falta 1 b
+# C3  = faltan 3 c
+# C2  = faltan 2 c
+# C1  = falta 1 c
 #
 # Convenciones:
 # - Blank: 'B'

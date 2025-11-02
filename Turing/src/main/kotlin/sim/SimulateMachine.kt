@@ -44,6 +44,7 @@ fun simulateMachine(
         // Crear instant description
         var instantDescription = tape.toMutableList()
         instantDescription.add(tapeIndex, "[$state, $cache]")
+
         instantDescriptions.add(instantDescription.joinToString(" ") { it })
         
         var currentTransition = validatingTransitions(
@@ -83,6 +84,8 @@ fun simulateMachine(
 
     // unir la cinta en una sola cadena
     val tapeResult = tape.joinToString("") { it }
+
     val accepted = state == turingMachine.finalState
+    
     return SimulationResult(instantDescriptions, accepted, tapeResult)
 }

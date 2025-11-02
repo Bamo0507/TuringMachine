@@ -1,17 +1,13 @@
 ---
 # MT alteradora por paridad de 'a'
 # Regla:
-# - Si #a es PAR  -> convertir todos los 'b' en 'c' (los 'c' permanecen 'c')
+# - Si #a es PAR -> convertir todos los 'b' en 'c' (los 'c' permanecen 'c')
 # - Si #a es IMPAR-> convertir todos los 'c' en 'b' (los 'b' permanecen 'b')
 #
 # Uso de mem_cache_value:
 # - B : estado inicial del simulador (se trata como paridad E)
-# - E : par (even)
-# - O : impar (odd)
-#
-# Convenciones:
-# - Blank: 'B'
-# - No se usan marcas (solo reescritura directa)
+# - E : par
+# - O : impar
 
 q_states:
   q_list:
